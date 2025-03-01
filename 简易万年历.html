@@ -1,0 +1,736 @@
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简易万年历</title>
+    <style>
+        :root {
+            --primary-color: #1a237e;
+            --secondary-color: #3949ab;
+            --today-color: #d32f2f;
+            --hover-color: rgba(57, 73, 171, 0.1);
+            --ripple-color: rgba(255, 255, 255, 0.3);
+        }
+
+        body {
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+            min-height: 100vh;
+            margin: 0;
+            padding: 40px;
+            background: linear-gradient(135deg, #1a237e 0%, #3949ab 100%);
+        }
+
+        .container {
+            display: flex;
+            gap: 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            flex-wrap: wrap;
+        }
+
+        .calendar,
+        .accounting {
+            flex: 1;
+            min-width: 300px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            margin-bottom: 20px;
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .nav-button {
+            font-size: 1.1em;
+            padding: 12px 24px;
+            background: var(--primary-color);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        .nav-button:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: var(--primary-color);
+            color: white;
+            padding: 10px;
+            text-align: center;
+        }
+
+        td {
+            padding: 12px 8px;
+            text-align: center;
+            border: 1px solid #ddd;
+            position: relative;
+            height: 100px;
+            vertical-align: top;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        td:hover {
+            background-color: var(--hover-color);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .today {
+            background: var(--today-color);
+            width: 32px;
+            height: 32px;
+            line-height: 32px;
+            box-shadow: 0 3px 10px rgba(211, 47, 47, 0.3);
+            color: white;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .prev-month,
+        .next-month {
+            color: #ccc;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--primary-color);
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .submit-btn {
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .transactions {
+            margin-top: 20px;
+        }
+
+        .transaction-item {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .expense {
+            color: var(--today-color);
+        }
+
+        .income {
+            color: #27ae60;
+        }
+
+        .delete-btn {
+            background: var(--today-color);
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-left: 10px;
+            font-size: 12px;
+        }
+
+        .delete-btn:hover {
+            background: #c0392b;
+        }
+
+        .transaction-info {
+            flex: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-right: 10px;
+        }
+
+        .holiday {
+            color: var(--today-color);
+            position: relative;
+        }
+        
+        .holiday::after {
+            content: attr(data-holiday);
+            position: absolute;
+            bottom: -2px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            white-space: nowrap;
+        }
+
+        .date-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 12px;
+            gap: 4px;
+            padding: 4px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .solar-date {
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+
+        .constellation,
+        .solar-term,
+        .season {
+            font-size: 10px;
+            color: #666;
+        }
+
+        .weather {
+            background: var(--secondary-color);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            margin-top: 4px;
+        }
+
+        .holiday .solar-date {
+            color: var(--today-color);
+        }
+        
+        .holiday::after {
+            bottom: -2px;
+        }
+
+        .solar-term {
+            background: #ff9800;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background-color: var(--ripple-color);
+            transform: scale(0);
+            animation: ripple 0.6s linear;
+            pointer-events: none;
+        }
+
+        @keyframes ripple {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+
+        .calendar-header h2 {
+            font-size: 1.8em;
+            margin: 0;
+            color: var(--primary-color);
+        }
+
+        .clock {
+            text-align: center;
+            color: var(--primary-color);
+            font-size: 1.2em;
+            margin: 10px 0;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            backdrop-filter: blur(5px);
+        }
+
+        .clock span {
+            display: inline-block;
+            padding: 0 5px;
+        }
+
+        .clock .time {
+            font-weight: bold;
+            color: var(--secondary-color);
+        }
+
+        @media screen and (max-width: 768px) {
+            body {
+                padding: 20px 10px;
+            }
+
+            .container {
+                gap: 20px;
+                padding: 0 10px;
+            }
+
+            .calendar,
+            .accounting {
+                flex: 100%;
+                min-width: auto;
+                padding: 15px;
+            }
+
+            td {
+                padding: 8px 4px;
+                height: 80px;
+            }
+
+            .nav-button {
+                padding: 8px 16px;
+                font-size: 1em;
+            }
+
+            .calendar-header h2 {
+                font-size: 1.4em;
+            }
+
+            .date-info {
+                font-size: 11px;
+                gap: 2px;
+            }
+
+            .solar-date {
+                font-size: 14px;
+            }
+
+            .solar-term,
+            .weather {
+                padding: 1px 4px;
+                font-size: 10px;
+            }
+
+            .form-group {
+                margin-bottom: 10px;
+            }
+
+            .form-group input,
+            .form-group select {
+                padding: 6px;
+            }
+
+            .submit-btn {
+                padding: 8px 16px;
+            }
+
+            .clock {
+                font-size: 1em;
+                padding: 5px;
+            }
+        }
+
+        @media print {
+            body {
+                padding: 0;
+                background: none;
+            }
+
+            .container {
+                display: block;
+            }
+
+            .calendar,
+            .accounting {
+                box-shadow: none;
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="calendar">
+            <div class="calendar-header">
+                <button class="nav-button" id="prevMonth">&lt; 上月</button>
+                <h2 id="monthYear"></h2>
+                <button class="nav-button" id="nextMonth">下月 &gt;</button>
+            </div>
+            <div class="clock" id="clock"></div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>日</th>
+                        <th>一</th>
+                        <th>二</th>
+                        <th>三</th>
+                        <th>四</th>
+                        <th>五</th>
+                        <th>六</th>
+                    </tr>
+                </thead>
+                <tbody id="calendarBody"></tbody>
+            </table>
+        </div>
+
+        <div class="accounting">
+            <h2>记账系统</h2>
+            <form id="accountForm">
+                <div class="form-group">
+                    <label>日期</label>
+                    <input type="date" id="transactionDate" required>
+                </div>
+                <div class="form-group">
+                    <label>类型</label>
+                    <select id="transactionType" required>
+                        <option value="expense">支出</option>
+                        <option value="income">收入</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>金额</label>
+                    <input type="number" id="amount" required min="0" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>描述</label>
+                    <input type="text" id="description" required>
+                </div>
+                <button type="submit" class="submit-btn">添加记录</button>
+            </form>
+
+            <div class="transactions">
+                <h3>交易记录</h3>
+                <div id="transactionList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentDate = new Date();
+
+        const holidays = {
+            '01-01': '元旦',
+            '02-14': '情人节',
+            '03-08': '妇女节',
+            '04-01': '愚人节',
+            '05-01': '劳动节',
+            '06-01': '儿童节',
+            '08-01': '建军节',
+            '09-10': '教师节',
+            '10-01': '国庆节',
+            '12-25': '圣诞节',
+            '2024-02-10': '春节',
+            '2024-02-24': '元宵节',
+            '2024-04-04': '清明节',
+            '2024-06-10': '端午节',
+            '2024-08-17': '七夕节',
+            '2024-09-17': '中秋节',
+            '2024-10-23': '重阳节',
+        };
+
+        const solarTerms = {
+            '01-06': '小寒', '01-20': '大寒',
+            '02-04': '立春', '02-19': '雨水', 
+            '03-06': '惊蛰', '03-21': '春分',
+            '04-05': '清明', '04-20': '谷雨', 
+            '05-06': '立夏', '05-21': '小满',
+            '06-06': '芒种', '06-21': '夏至', 
+            '07-07': '小暑', '07-23': '大暑',
+            '08-08': '立秋', '08-23': '处暑', 
+            '09-08': '白露', '09-23': '秋分',
+            '10-08': '寒露', '10-24': '霜降', 
+            '11-08': '立冬', '11-22': '小雪',
+            '12-07': '大雪', '12-22': '冬至'
+        };
+
+        const constellations = [
+            {name: '水瓶座', start: '01-20', end: '02-18'},
+            {name: '双鱼座', start: '02-19', end: '03-20'},
+            {name: '白羊座', start: '03-21', end: '04-19'},
+            {name: '金牛座', start: '04-20', end: '05-20'},
+            {name: '双子座', start: '05-21', end: '06-21'},
+            {name: '巨蟹座', start: '06-22', end: '07-22'},
+            {name: '狮子座', start: '07-23', end: '08-22'},
+            {name: '处女座', start: '08-23', end: '09-22'},
+            {name: '天秤座', start: '09-23', end: '10-23'},
+            {name: '天蝎座', start: '10-24', end: '11-22'},
+            {name: '射手座', start: '11-23', end: '12-21'},
+            {name: '摩羯座', start: '12-22', end: '01-19'}
+        ];
+
+        function initCalendar() {
+            updateCalendar(currentDate);
+            addEventListeners();
+        }
+
+        async function updateCalendar(date) {
+            const year = date.getFullYear();
+            const month = date.getMonth();
+            
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            const startDay = firstDay.getDay();
+
+            document.getElementById('monthYear').textContent = 
+                `${year}年 ${month + 1}月`;
+
+            let calendarBody = document.getElementById('calendarBody');
+            calendarBody.innerHTML = '';
+            
+            let dateNum = 1;
+            const today = new Date();
+
+            for (let i = 0; i < 6; i++) {
+                const row = document.createElement('tr');
+                
+                for (let j = 0; j < 7; j++) {
+                    const cell = document.createElement('td');
+                    
+                    if ((i === 0 && j < startDay) || dateNum > daysInMonth) {
+                        const diff = dateNum > daysInMonth ? 
+                            dateNum - daysInMonth : 
+                            -(new Date(year, month, 0).getDate() - startDay + 1 - j);
+                        
+                        const otherDate = new Date(year, month, diff);
+                        cell.textContent = otherDate.getDate();
+                        cell.classList.add(dateNum > daysInMonth ? 'next-month' : 'prev-month');
+                    } else {
+                        const monthDay = `${String(month + 1).padStart(2, '0')}-${String(dateNum).padStart(2, '0')}`;
+                        const currentDate = `${year}-${monthDay}`;
+                        
+                        const dateInfo = document.createElement('div');
+                        dateInfo.className = 'date-info';
+
+                        const solarDate = document.createElement('div');
+                        solarDate.className = 'solar-date';
+                        solarDate.textContent = dateNum;
+                        dateInfo.appendChild(solarDate);
+
+                        if (solarTerms[monthDay]) {
+                            const solarTerm = document.createElement('div');
+                            solarTerm.className = 'solar-term';
+                            solarTerm.textContent = solarTerms[monthDay];
+                            dateInfo.appendChild(solarTerm);
+                        }
+
+                        const constellation = document.createElement('div');
+                        constellation.className = 'constellation';
+                        constellation.textContent = getConstellation(month + 1, dateNum);
+                        dateInfo.appendChild(constellation);
+
+                        const season = document.createElement('div');
+                        season.className = 'season';
+                        season.textContent = getSeason(month + 1);
+                        dateInfo.appendChild(season);
+
+                        if (year === today.getFullYear() && 
+                            month === today.getMonth() && 
+                            dateNum === today.getDate()) {
+                            solarDate.innerHTML = `<span class="today">${dateNum}</span>`;
+                            
+                            const weather = document.createElement('div');
+                            weather.className = 'weather';
+                            weather.textContent = await getWeather();
+                            dateInfo.appendChild(weather);
+                        }
+
+                        if (holidays[currentDate] || holidays[monthDay]) {
+                            cell.classList.add('holiday');
+                            cell.setAttribute('data-holiday', holidays[currentDate] || holidays[monthDay]);
+                        }
+
+                        cell.addEventListener('click', createRipple);
+                        
+                        cell.appendChild(dateInfo);
+                        dateNum++;
+                    }
+                    
+                    row.appendChild(cell);
+                }
+                
+                calendarBody.appendChild(row);
+                if (dateNum > daysInMonth) break;
+            }
+        }
+
+        function addEventListeners() {
+            document.getElementById('prevMonth').addEventListener('click', () => {
+                currentDate.setMonth(currentDate.getMonth() - 1);
+                updateCalendar(currentDate);
+            });
+
+            document.getElementById('nextMonth').addEventListener('click', () => {
+                currentDate.setMonth(currentDate.getMonth() + 1);
+                updateCalendar(currentDate);
+            });
+        }
+
+        window.onload = function() {
+            initCalendar();
+            initClock();
+        };
+
+        const accountForm = document.getElementById('accountForm');
+        const transactionList = document.getElementById('transactionList');
+        let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+
+        function addTransaction(e) {
+            e.preventDefault();
+            
+            const transaction = {
+                date: document.getElementById('transactionDate').value,
+                type: document.getElementById('transactionType').value,
+                amount: parseFloat(document.getElementById('amount').value),
+                description: document.getElementById('description').value,
+                id: Date.now()
+            };
+
+            transactions.push(transaction);
+            localStorage.setItem('transactions', JSON.stringify(transactions));
+            
+            displayTransactions();
+            accountForm.reset();
+        }
+
+        function displayTransactions() {
+            transactionList.innerHTML = '';
+            
+            transactions.sort((a, b) => new Date(b.date) - new Date(a.date))
+                .forEach(transaction => {
+                    const div = document.createElement('div');
+                    div.className = 'transaction-item';
+                    div.innerHTML = `
+                        <div class="transaction-info">
+                            <div>
+                                <div>${transaction.date}</div>
+                                <div>${transaction.description}</div>
+                            </div>
+                            <div class="${transaction.type}">
+                                ${transaction.type === 'expense' ? '-' : '+'}
+                                ￥${transaction.amount.toFixed(2)}
+                            </div>
+                        </div>
+                        <button class="delete-btn" data-id="${transaction.id}">删除</button>
+                    `;
+                    
+                    transactionList.appendChild(div);
+                });
+
+            document.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', deleteTransaction);
+            });
+        }
+
+        function deleteTransaction(e) {
+            const id = parseInt(e.target.getAttribute('data-id'));
+            transactions = transactions.filter(t => t.id !== id);
+            localStorage.setItem('transactions', JSON.stringify(transactions));
+            displayTransactions();
+        }
+
+        accountForm.addEventListener('submit', addTransaction);
+        displayTransactions();
+
+        document.getElementById('transactionDate').valueAsDate = new Date();
+
+        function getSeason(month) {
+            if (month >= 3 && month <= 5) return '春';
+            if (month >= 6 && month <= 8) return '夏';
+            if (month >= 9 && month <= 11) return '秋';
+            return '冬';
+        }
+
+        function getConstellation(month, day) {
+            const date = `${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            return constellations.find(c => {
+                const start = c.start.split('-').map(Number);
+                const end = c.end.split('-').map(Number);
+                if (start[0] > end[0]) {
+                    return (month === start[0] && day >= start[1]) || 
+                           (month === end[0] && day <= end[1]);
+                }
+                return (month === start[0] && day >= start[1]) || 
+                       (month === end[0] && day <= end[1]) ||
+                       (month > start[0] && month < end[0]);
+            })?.name || '';
+        }
+
+        async function getWeather() {
+            const weathers = ['晴朗', '多云', '阴天', '小雨', '中雨', '大雨', '雷阵雨', '晴转多云'];
+            return '天气：' + weathers[Math.floor(Math.random() * weathers.length)];
+        }
+
+        function createRipple(event) {
+            const cell = event.currentTarget;
+            
+            const ripples = cell.getElementsByClassName('ripple');
+            Array.from(ripples).forEach(ripple => ripple.remove());
+
+            const ripple = document.createElement('div');
+            ripple.className = 'ripple';
+            
+            const rect = cell.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            
+            ripple.style.left = `${x}px`;
+            ripple.style.top = `${y}px`;
+            
+            cell.appendChild(ripple);
+            
+            ripple.addEventListener('animationend', () => {
+                ripple.remove();
+            });
+        }
+
+        function updateClock() {
+            const now = new Date();
+            const weekDays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+            
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const date = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const weekDay = weekDays[now.getDay()];
+
+            const clockHtml = `
+                <span>${year}年${month}月${date}日</span>
+                <span>${weekDay}</span>
+                <span class="time">${hours}:${minutes}:${seconds}</span>
+            `;
+
+            document.getElementById('clock').innerHTML = clockHtml;
+        }
+
+        function initClock() {
+            updateClock();
+            setInterval(updateClock, 1000);
+        }
+    </script>
+</body>
+</html>
